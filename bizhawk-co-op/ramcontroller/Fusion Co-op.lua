@@ -347,8 +347,10 @@ function getAbility()
 	flags = readRAM("System Bus", 0x300131A, 4)
 
 	if(abilityRAM ~= flags) then
+		print(flags)
+		print(abilityRAM)
+		if(math.abs(flags - abilityRAM) ~= 8388608) then ability[0] = flags end
 		abilityRAM = flags
-		ability[0] = flags
 		--print("changed")
 		--print(ability)
 	end
@@ -754,6 +756,7 @@ end
 -- Returns the message as a dictionary object
 -- Returns false if no message is to be send
 function mzm_ram.getMessage()
+
 	-- Gets the current RAM state
 	local newRAM = {
 		tanks = prevRAM.tanks,
