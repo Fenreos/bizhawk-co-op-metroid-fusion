@@ -2,6 +2,10 @@
 
 bizhawk-co-op is a Lua script for BizHawk that allows two or more people to play a co-op experience by sharing inventory/ammo/hp over the network. This will work with vanilla versions of the games and also randomizers.
 
+## Metroid Fusion Co-op
+
+Health and ammo is shared. Items obtained by a player are given to everyone, and items are removed from the room after reloading it. The map is shared and updates when opening/closing the pause menu and entering a room transition, but the current tile will glitch out if both players collect an item without the other reloading the room first. Events such as boss deaths, destroyed X-barriers, atmospheric stabilizers, eye doors, the Main Deck missile hatch, and water lowering are shared.
+
 ## Metroid: Zero Mission Co-op
 
 Health and ammo is shared. Items obtained by a player are given to everyone. Items locations are split such that each item can be optained by only one player. The other players will find a screw attack block in its place. The items at the unknown item locations, power grip location, and imago location can be obtained by either player. Events such as boss deaths are also shared.
