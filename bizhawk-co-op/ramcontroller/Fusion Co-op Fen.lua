@@ -1,3 +1,7 @@
+-- ##########################################################
+-- #                          DATA                          #
+-- ##########################################################
+
 itemLocations = {
 	{ ID=00, Area=0, Room=0x00, RoomWidth=0x4F, X=0x0b, Y=0x1b, Width=1, Height=1 },
 	{ ID=01, Area=0, Room=0x01, RoomWidth=0x13, X=0x0d, Y=0x07, Width=1, Height=1 },
@@ -103,9 +107,40 @@ itemLocations = {
 
 
 
+-- ##########################################################
+-- #                    HELPER FUNCTIONS                    #
+-- ##########################################################
+
+-- convert table to string
+function dump(o)
+	if type(o) == 'table' then
+	   local s = '{ '
+	   for k,v in pairs(o) do
+		  if type(k) ~= 'number' then k = '"'..k..'"' end
+		  s = s .. '['..k..'] = ' .. dump(v) .. ','
+	   end
+	   return s .. '} '
+	else
+	   return tostring(o)
+	end
+ end
+ 
+
+
+-- ##########################################################
+-- #                          CORE                          #
+-- ##########################################################
+
 -- Writes value to RAM using little endian
 local prevDomain = ""
 function writeRAM(domain, address, size, value)
+    -- print("[writeRAM]")
+    -- print("domain : ", dump(domain))
+    -- print("address : ", dump(address))
+    -- print("size : ", dump(size))
+    -- print("value : ", dump(value))
+    -- print("")
+
 	-- update domain
 	if (prevDomain ~= domain) then
 		prevDomain = domain
@@ -124,6 +159,12 @@ end
 
 -- Reads a value from RAM using little endian
 function readRAM(domain, address, size)
+    -- print("[readRAM]")
+    -- print("domain : ", dump(domain))
+    -- print("address : ", dump(address))
+    -- print("size : ", dump(size))
+    -- print("")
+
 	-- update domain
 	if (prevDomain ~= domain) then
 		prevDomain = domain
@@ -138,9 +179,21 @@ function readRAM(domain, address, size)
 	end
 end
 
-function do_tables_match(a, b) return table.concat(a) == table.concat(b) end
+function do_tables_match(a, b)
+    -- print("[do_tables_match]")
+    -- print("a : ", dump(a))
+    -- print("b : ", dump(b))
+    -- print("")
+
+	return table.concat(a) == table.concat(b)
+end
 
 function difference(a, b)
+    -- print("[difference]")
+    -- print("a : ", dump(a))
+    -- print("b : ", dump(b))
+    -- print("")
+
     local ret = {}
 	for k,v in pairs(a) do
 		if (v ~= b[k]) then ret[k] = b[k] end
@@ -165,83 +218,83 @@ local waterFlag = readRAM("System Bus", 0x30006B9, 1)
 
 -- Gets the list of the abilities in RAM
 function getAbility()
+    -- print("[getAbility]")
+    -- print("")
+
 	local ability = {}
 	flags = readRAM("System Bus", 0x300131A, 4)
 
 	if(abilityRAM ~= flags) then
-		print(flags)
-		print(abilityRAM)
 		if(math.abs(flags - abilityRAM) ~= 8388608) then ability[0] = flags end
 		abilityRAM = flags
-		print("changed")
-		print(ability)
 	end
+
 	return ability
 end
 
 -- Gets the list of all the event states
 function getEvents()
+    -- print("[getEvents]")
+    -- print("")
+
 	local events = {}
 	local check = do_tables_match(mapRAM, memory.readbyterange(0x2037C00, 0x400))
 	local check2 = do_tables_match(currMapRAM, memory.readbyterange(0x2034000, 0x800))
 
 	if(check ~= true or check2 ~= true) then
-		print("bruh map")
 		events[0] = difference(mapRAM, memory.readbyterange(0x2037C00, 0x400))
 		events[1] = difference(currMapRAM, memory.readbyterange(0x2034000, 0x800))
 		events[2] = readRAM("System Bus", 0x300002C, 1)
-		print(events[2])
 		mapRAM = memory.readbyterange(0x2037C00, 0x400)
 		currMapRAM = memory.readbyterange(0x2034000, 0x800)
-		print(events[0])
 	end
 
-	if(bossRAM ~= readRAM("System Bus", 0x30006BA, 2)) then
+	if (bossRAM ~= readRAM("System Bus", 0x30006BA, 2)) then
 		events[3] = readRAM("System Bus", 0x30006BA, 2)
 		bossRAM = readRAM("System Bus", 0x30006BA, 2)
 	end
 
-	if(dataRoomRAM ~= readRAM("System Bus", 0x300134B, 1)) then
+	if (dataRoomRAM ~= readRAM("System Bus", 0x300134B, 1)) then
 		events[4] = readRAM("System Bus", 0x300134B, 1)
 		dataRoomRAM = readRAM("System Bus", 0x300134B, 1)
 	end
 
-	if(destroyedStabilizers ~= readRAM("System Bus", 0x30006AE, 2)) then
+	if (destroyedStabilizers ~= readRAM("System Bus", 0x30006AE, 2)) then
 		events[5] = readRAM("System Bus", 0x30006AE, 2)
 		destroyedStabilizers = readRAM("System Bus", 0x30006AE, 2)
 	end
 
-	if(destroyedXBarriers ~= readRAM("System Bus", 0x30006B0, 2)) then
+	if (destroyedXBarriers ~= readRAM("System Bus", 0x30006B0, 2)) then
 		events[6] = readRAM("System Bus", 0x30006B0, 2)
 		destroyedXBarriers = readRAM("System Bus", 0x30006B0, 2)
 	end
 
-	if(destroyedXSuperBarriers ~= readRAM("System Bus", 0x30006B2, 2)) then
+	if (destroyedXSuperBarriers ~= readRAM("System Bus", 0x30006B2, 2)) then
 		events[7] = readRAM("System Bus", 0x30006B2, 2)
 		destroyedXSuperBarriers = readRAM("System Bus", 0x30006B2, 2)
 	end
 
-	if(destroyedXPowerBarriers ~= readRAM("System Bus", 0x30006B4, 2)) then
+	if (destroyedXPowerBarriers ~= readRAM("System Bus", 0x30006B4, 2)) then
 		events[8] = readRAM("System Bus", 0x30006B4, 2)
 		destroyedXPowerBarriers = readRAM("System Bus", 0x30006B4, 2)
 	end
 
-	if(destroyedEyedoors ~= readRAM("System Bus", 0x30006B6, 2)) then
+	if (destroyedEyedoors ~= readRAM("System Bus", 0x30006B6, 2)) then
 		events[9] = readRAM("System Bus", 0x30006B6, 2)
 		destroyedEyedoors = readRAM("System Bus", 0x30006B6, 2)
 	end
 
-	if(destroyedHatch ~= readRAM("System Bus", 0x30006B8, 1)) then
+	if (destroyedHatch ~= readRAM("System Bus", 0x30006B8, 1)) then
 		events[10] = readRAM("System Bus", 0x30006B8, 1)
 		destroyedHatch = readRAM("System Bus", 0x30006B8, 1)
 	end
 
-	if(waterFlag ~= readRAM("System Bus", 0x30006B9, 1)) then
+	if (waterFlag ~= readRAM("System Bus", 0x30006B9, 1)) then
 		events[11] = readRAM("System Bus", 0x30006B9, 1)
 		waterFlag = readRAM("System Bus", 0x30006B9, 1)
 	end
 
-	if(readRAM("System Bus", 0x3000B87, 1) == 0x67) then
+	if (readRAM("System Bus", 0x3000B87, 1) == 0x67) then
 		writeRAM("System Bus", 0x3000B87, 1, 0x69)
 		events[12] = readRAM("System Bus", 0x3000B87, 1)
 	end
@@ -251,6 +304,9 @@ end
 
 -- Gets the list of ammo values and capacities
 function getAmmo()
+    -- print("[getAmmo]")
+    -- print("")
+
 	return {
 		energyCapacity = readRAM("System Bus", 0x3001312, 2),
 		missileCapacity = readRAM("System Bus", 0x3001316, 2),
@@ -267,14 +323,15 @@ end
 -- Does not send ammo updates if new tank is found
 local prevCollectingTankFlag = 0
 function eventTankCollected()
+    -- print("[eventTankCollected]")
+    -- print("")
+
 	local tanks = {}
 	local check = do_tables_match(tankRAM, memory.readbyterange(0x2037200, 0xA00))
 
 	if(check ~= true) then
-		print("bruh")
 		tanks[0] = difference(tankRAM, memory.readbyterange(0x2037200, 0xA00))
 		tankRAM = memory.readbyterange(0x2037200, 0xA00)
-		print(tanks[0])
 		return tanks
 	end
 
@@ -283,12 +340,16 @@ end
 
 -- Event to check when a new ability is collected
 function eventAbilityCollected(prevRam, newRam)
+    -- print("[eventAbilityCollected]")
+    -- print("prevRam : ", dump(prevRam))
+    -- print("newRam : ", dump(newRam))
+    -- print("")
+
 	-- Find changed ability
 	-- Only one ability can be collected at a time
 	-- Only checks for added abilities, not removed (varia)
 	if(newRam.ability[0] ~= nil and prevRam.ability[0] ~= newRam.ability[0]) then
 		prevRam.ability = newRam.ability
-		print(newRam.ability)
 		return {[0] = newRam.ability[0]}
 	end
 
@@ -298,9 +359,14 @@ end
 
 -- Event to check if any game events have changed
 function eventTriggerEvent(prevRam, newRam)
+    -- print("[eventTriggerEvent]")
+    -- print("prevRam : ", dump(prevRam))
+    -- print("newRam : ", dump(newRam))
+    -- print("")
+
 	local events = {}
 	-- check if any changes
-	if(newRam.events[0] ~= nil or newRam.events[1] ~= nil or newRam.events[2] ~= nil or newRam.events[3] ~= nil or newRam.events[4] ~= nil or newRam.events[5] ~= nil or newRam.events[6] ~= nil or newRam.events[7] ~= nil or newRam.events[8] ~= nil or newRam.events[9] ~= nil or newRam.events[10] ~= nil or newRam.events[11] ~= nil or newRam.events[12] ~= nil and (prevRam.events[0] ~= newRam.events[0] or prevRam.events[1] ~= newRam.events[1] or prevRam.events[2] ~= newRam.events[2] or prevRam.events[3] ~= newRam.events[3] or prevRam.events[4] ~= newRam.events[4] or prevRam.events[5] ~= newRam.events[5] or prevRam.events[6] ~= newRam.events[6] or prevRam.events[7] ~= newRam.events[7] or prevRam.events[8] ~= newRam.events[8] or prevRam.events[9] ~= newRam.events[9] or prevRam.events[10] ~= newRam.events[10] or prevRam.events[11] ~= newRam.events[11] or prevRam.events[12] ~= newRam.events[12])) then
+	if (newRam.events[0] ~= nil or newRam.events[1] ~= nil or newRam.events[2] ~= nil or newRam.events[3] ~= nil or newRam.events[4] ~= nil or newRam.events[5] ~= nil or newRam.events[6] ~= nil or newRam.events[7] ~= nil or newRam.events[8] ~= nil or newRam.events[9] ~= nil or newRam.events[10] ~= nil or newRam.events[11] ~= nil or newRam.events[12] ~= nil and (prevRam.events[0] ~= newRam.events[0] or prevRam.events[1] ~= newRam.events[1] or prevRam.events[2] ~= newRam.events[2] or prevRam.events[3] ~= newRam.events[3] or prevRam.events[4] ~= newRam.events[4] or prevRam.events[5] ~= newRam.events[5] or prevRam.events[6] ~= newRam.events[6] or prevRam.events[7] ~= newRam.events[7] or prevRam.events[8] ~= newRam.events[8] or prevRam.events[9] ~= newRam.events[9] or prevRam.events[10] ~= newRam.events[10] or prevRam.events[11] ~= newRam.events[11] or prevRam.events[12] ~= newRam.events[12])) then
 		prevRam.events = newRam.events
 		events[0] = newRam.events[0]
 		events[1] = newRam.events[1]
@@ -325,6 +391,11 @@ end
 -- Event to check if any ammo changed
 -- Will not have any changes if a tank was collected
 function eventAmmoChange(prevRam, newRam)
+    -- print("[eventAmmoChange]")
+    -- print("prevRam : ", dump(prevRam))
+    -- print("newRam : ", dump(newRam))
+    -- print("")
+
 	local deltaammo = {}
 	local changed = false
 
@@ -382,12 +453,14 @@ function eventAmmoChange(prevRam, newRam)
 	end
 end
 
-
 -- This sets a tank to be collected and give the appropriate ammo
 -- Does not trigger for tanks that have already been collected
 function setTankCollected(prevRAM, newTank)
-	print("what")
-	print(newTank[0])
+    -- print("[setTankCollected]")
+    -- print("prevRAM : ", dump(prevRAM))
+    -- print("newTank : ", dump(newTank))
+    -- print("")
+
 	for k,v in pairs(newTank[0]) do
 		writeRAM("System Bus", 0x2037200 + k, 1, v)
 	end
@@ -400,26 +473,25 @@ end
 
 -- Set an ability to be collected
 function setAbilityCollected(prevAbility, newAbility)
-	print(newAbility)
+    -- print("[setAbilityCollected]")
+    -- print("prevAbility : ", dump(prevAbility))
+    -- print("newAbility : ", dump(newAbility))
+    -- print("")
+
 	prevAbility = newAbility
 	writeRAM("System Bus", 0x300131A, 4, newAbility[0])
 	writeRAM("System Bus", 0x300001C, 1, readRAM("System Bus", 0x300131D))
 	return prevAbility
 end
 
-function removeTankFromRoom()
-	-- TODO
-end
-
-function removeAbilityFromRoom()
-	-- TODO
-end
-
 -- Set a game event state to new state
 function setEvent(prevEvent, newEvent)
+    -- print("[setEvent]")
+    -- print("prevEvent : ", dump(prevEvent))
+    -- print("newEvent : ", dump(newEvent))
+    -- print("")
+
 	-- for each even change...
-	print("what")
-	print(newEvent[0])
 	if(newEvent[0] ~= nil) then
 		for k,v in pairs(newEvent[0]) do
 			writeRAM("System Bus", 0x2037C00 + k, 1, v)
@@ -427,10 +499,7 @@ function setEvent(prevEvent, newEvent)
 		mapRAM = memory.readbyterange(0x2037C00, 0x400)
 	end
 
-	print(readRAM("System Bus", 0x300002C, 1))
-	print(newEvent[2])
 	if(newEvent[1] ~= nil and newEvent[2] ~= nil and readRAM("System Bus", 0x300002C, 1) == newEvent[2]) then
-		print("no???")
 		for k,v in pairs(newEvent[1]) do
 			writeRAM("System Bus", 0x2034000 + k, 1, v)
 		end
@@ -494,6 +563,11 @@ end
 
 -- Set ammo counts to new updates
 function setAmmo(prevAmmo, deltaAmmo)
+    -- print("[setAmmo]")
+    -- print("prevAmmo : ", dump(prevAmmo))
+    -- print("deltaAmmo : ", dump(deltaAmmo))
+    -- print("")
+
 	local newAmmo = {}
 	if deltaAmmo.delta then
 		-- If incremental delta changes, add values to current values
@@ -550,10 +624,11 @@ local prevRAM = {
 	events = {}
 }
 
-
-
 local splitItems = {}
 function removeItems()
+    -- print("[removeItems]")
+    -- print("")
+
 	areaID = readRAM("System Bus", 0x0054, 1)
 	roomID = readRAM("System Bus", 0x0055, 1)
 
@@ -572,11 +647,13 @@ function removeItems()
 	end
 end
 
-
 -- Gets a message to send to the other player of new changes
 -- Returns the message as a dictionary object
 -- Returns false if no message is to be send
 function mzm_ram.getMessage()
+    -- print("[mzm_ram.getMessage]")
+    -- print("")
+
 
 	-- Gets the current RAM state
 	local newRAM = {
@@ -637,6 +714,11 @@ end
 
 -- Process a message from another player and update RAM
 function mzm_ram.processMessage(their_user, message)
+    print("[mzm_ram.processMessage]")
+    print("their_user : ", dump(their_user))
+    print("message :", dump(message))
+    print("")
+
 	-- Process new tank collected
 	-- Does nothing if tank was already collected
 	if message["t"] then
