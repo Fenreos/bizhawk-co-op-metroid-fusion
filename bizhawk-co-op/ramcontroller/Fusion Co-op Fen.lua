@@ -718,6 +718,10 @@ function mzm_ram.getMessage()
 
 	if changed then
 		-- Send message
+		print("[Message]")
+		print(dump(message))
+		print("")
+
 		return message
 	else 
 		-- No updates, no message
@@ -727,10 +731,10 @@ end
 
 -- Process a message from another player and update RAM
 function mzm_ram.processMessage(their_user, message)
-    print("[mzm_ram.processMessage]")
-    print("their_user : ", dump(their_user))
-    print("message :", dump(message))
-    print("")
+    -- print("[mzm_ram.processMessage]")
+    -- print("their_user : ", dump(their_user))
+    -- print("message :", dump(message))
+    -- print("")
 
 	-- Process new tank collected
 	-- Does nothing if tank was already collected
