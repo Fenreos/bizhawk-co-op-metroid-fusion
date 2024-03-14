@@ -111,20 +111,28 @@ itemLocations = {
 -- #                    HELPER FUNCTIONS                    #
 -- ##########################################################
 
+-- create an indent
+function indent(n)
+	local s = ''
+	local t = '    '
+	for i = 1, n do s = s .. t end
+	return s
+end
+
 -- convert table to string
-function dump(o)
+function dump(o, n)
+	if n == nil then n = 0 end
 	if type(o) == 'table' then
-	   local s = '{ '
-	   for k,v in pairs(o) do
-		  if type(k) ~= 'number' then k = '"'..k..'"' end
-		  s = s .. '['..k..'] = ' .. dump(v) .. ','
-	   end
-	   return s .. '} '
-	else
-	   return tostring(o)
+		local s = '{\n'
+		for k ,v in pairs(o) do
+			if type(k) ~= 'number' then k = '"' .. k .. '"' end
+			s = s .. indent(n + 1) .. '[' .. k .. '] = ' .. dump(v, n + 1) .. ',\n'
+		end
+		return s .. indent(n) .. '}'
+	else return tostring(o)
 	end
- end
- 
+end
+
 
 
 -- ##########################################################
@@ -408,26 +416,31 @@ function eventAmmoChange(prevRam, newRam)
 			deltaammo.energyCapacity = newRam.ammo.energyCapacity - prevRam.ammo.energyCapacity
 			changed = true			
 		end
+
 		-- Check missile capacity changes
 		if (newRam.ammo.missileCapacity ~= prevRam.ammo.missileCapacity) then
 			deltaammo.missileCapacity = newRam.ammo.missileCapacity - prevRam.ammo.missileCapacity
 			changed = true			
 		end
+
 		-- Check power capacity changes
 		if (newRam.ammo.powerCapacity ~= prevRam.ammo.powerCapacity) then
 			deltaammo.powerCapacity = newRam.ammo.powerCapacity - prevRam.ammo.powerCapacity
 			changed = true			
-		end		
+		end
+
 		-- Check energy count changes
 		if (newRam.ammo.energyCount ~= prevRam.ammo.energyCount) then
 			deltaammo.energyCount = newRam.ammo.energyCount - prevRam.ammo.energyCount
 			changed = true			
 		end
+
 		-- Check missile count changes
 		if (newRam.ammo.missileCount ~= prevRam.ammo.missileCount) then
 			deltaammo.missileCount = newRam.ammo.missileCount - prevRam.ammo.missileCount
 			changed = true			
 		end
+
 		-- Check power bomb count changes
 		if (newRam.ammo.powerCount ~= prevRam.ammo.powerCount) then
 			deltaammo.powerCount = newRam.ammo.powerCount - prevRam.ammo.powerCount
@@ -625,6 +638,7 @@ local prevRAM = {
 }
 
 local splitItems = {}
+
 function removeItems()
     -- print("[removeItems]")
     -- print("")
@@ -653,7 +667,6 @@ end
 function mzm_ram.getMessage()
     -- print("[mzm_ram.getMessage]")
     -- print("")
-
 
 	-- Gets the current RAM state
 	local newRAM = {
