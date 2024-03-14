@@ -123,6 +123,7 @@ end
 function dump(o, n)
 	if n == nil then n = 0 end
 	if type(o) == 'table' then
+		table.sort(o)
 		local s = '{\n'
 		for k ,v in pairs(o) do
 			if type(k) ~= 'number' then k = '"' .. k .. '"' end
