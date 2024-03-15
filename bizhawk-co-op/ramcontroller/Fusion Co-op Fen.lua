@@ -119,17 +119,35 @@ function indent(n)
 	return s
 end
 
+-- compare 2 variables
+function compare(a, b)
+	if type(a) ~= type(b) then
+	  	if type(a) == "number" then return true
+	  	else return false
+	  	end
+	else return a < b
+	end
+end
+
 -- convert table to string
 function dump(o, n)
 	if n == nil then n = 0 end
 	if type(o) == 'table' then
-		table.sort(o)
-		local s = '{\n'
-		for k ,v in pairs(o) do
+	  	local s = '{'
+	  	local keys = {}
+    	for k in pairs(o) do table.insert(keys, k) end
+    	table.sort(keys, compare)
+	  
+		local i = 0
+		for _, k in ipairs(keys) do
+		  	local v = o[k]
 			if type(k) ~= 'number' then k = '"' .. k .. '"' end
-			s = s .. indent(n + 1) .. '[' .. k .. '] = ' .. dump(v, n + 1) .. ',\n'
+			s = s .. '\n' .. indent(n + 1) .. '[' .. k .. '] = ' .. dump(v, n + 1) .. ','
+			i = i + 1
 		end
-		return s .. indent(n) .. '}'
+		
+		if i > 0 then s = s .. '\n' .. indent(n) end
+		return s .. '}'
 	else return tostring(o)
 	end
 end
@@ -719,7 +737,7 @@ function mzm_ram.getMessage()
 
 	if changed then
 		-- Send message
-		print("[Message]")
+		print("[data sent]")
 		print(dump(message))
 		print("")
 
@@ -732,10 +750,9 @@ end
 
 -- Process a message from another player and update RAM
 function mzm_ram.processMessage(their_user, message)
-    -- print("[mzm_ram.processMessage]")
-    -- print("their_user : ", dump(their_user))
-    -- print("message :", dump(message))
-    -- print("")
+    print("[data received from " .. dump(their_user) .. "]")
+    print(dump(message))
+    print("")
 
 	-- Process new tank collected
 	-- Does nothing if tank was already collected
