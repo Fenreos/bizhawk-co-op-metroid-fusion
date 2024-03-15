@@ -393,21 +393,16 @@ function eventTriggerEvent(prevRam, newRam)
 
 	local events = {}
 	-- check if any changes
-	if (newRam.events[0] ~= nil or newRam.events[1] ~= nil or newRam.events[2] ~= nil or newRam.events[3] ~= nil or newRam.events[4] ~= nil or newRam.events[5] ~= nil or newRam.events[6] ~= nil or newRam.events[7] ~= nil or newRam.events[8] ~= nil or newRam.events[9] ~= nil or newRam.events[10] ~= nil or newRam.events[11] ~= nil or newRam.events[12] ~= nil and (prevRam.events[0] ~= newRam.events[0] or prevRam.events[1] ~= newRam.events[1] or prevRam.events[2] ~= newRam.events[2] or prevRam.events[3] ~= newRam.events[3] or prevRam.events[4] ~= newRam.events[4] or prevRam.events[5] ~= newRam.events[5] or prevRam.events[6] ~= newRam.events[6] or prevRam.events[7] ~= newRam.events[7] or prevRam.events[8] ~= newRam.events[8] or prevRam.events[9] ~= newRam.events[9] or prevRam.events[10] ~= newRam.events[10] or prevRam.events[11] ~= newRam.events[11] or prevRam.events[12] ~= newRam.events[12])) then
-		prevRam.events = newRam.events
-		events[0] = newRam.events[0]
-		events[1] = newRam.events[1]
-		events[2] = newRam.events[2]
-		events[3] = newRam.events[3]
-		events[4] = newRam.events[4]
-		events[5] = newRam.events[5]
-		events[6] = newRam.events[6]
-		events[7] = newRam.events[7]
-		events[8] = newRam.events[8]
-		events[9] = newRam.events[9]
-		events[10] = newRam.events[10]
-		events[11] = newRam.events[11]
-		events[12] = newRam.events[12]
+	local is_changes = false
+	for i = 0, 12 do
+		if (newRam.events[i] ~= nil and newRam.events[i] ~= prevRam.events[i]) then
+			is_changes = true
+			break
+		end
+	end
+
+	if (is_changes) then
+		for i = 0, 12 do events[i] = newRam.events[i] end
 		return events
 	end
 
