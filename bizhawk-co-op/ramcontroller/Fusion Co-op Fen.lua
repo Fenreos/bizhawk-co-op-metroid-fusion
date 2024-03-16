@@ -105,6 +105,16 @@ itemLocations = {
 	{ ID=99, Area=6, Room=0x57, RoomWidth=0x31, X=0x12, Y=0x12, Width=1, Height=1 },
 }
 
+local areas = {
+	[0] = "Main Deck",
+	[1] = "Sector 1 (SRX)",
+	[2] = "Sector 2 (TRO)",
+	[3] = "Sector 3 (PYR)",
+	[4] = "Sector 4 (AQA)",
+	[5] = "Sector 5 (ARC)",
+	[6] = "Sector 6 (NOC)",
+}
+
 
 
 -- ##########################################################
@@ -129,7 +139,7 @@ function compare(a, b)
 	end
 end
 
--- convert table to string
+-- convert anything to string
 function dump(o, n)
 	if n == nil then n = 0 end
 	if type(o) == 'table' then
@@ -152,7 +162,26 @@ function dump(o, n)
 	end
 end
 
+-- convert byte to string
+function byte_to_string(v)
+    local s = ""
+    for i = 0, 7 do
+        r = math.fmod(v, 2)
+        s = (r == 1 and "1" or "0") .. s
+        v = (v - r) / 2
+        i = i + 1
+    end
+    return s
+end  
 
+-- convert byte to hex
+function byte_to_hex(v, n)
+    local s = string.upper(string.format("%x", v))
+    if (n ~= nil) then
+        while string.len(s) < n do s = "0" .. s end
+    end
+    return "0x" .. s
+end
 
 -- ##########################################################
 -- #                          CORE                          #
@@ -222,7 +251,7 @@ function difference(a, b)
     -- print("")
 
     local ret = {}
-	for k,v in pairs(a) do
+	for k, v in pairs(a) do
 		if (v ~= b[k]) then ret[k] = b[k] end
 	end
     return ret
@@ -251,8 +280,8 @@ function getAbility()
 	local ability = {}
 	flags = readRAM("System Bus", 0x300131A, 4)
 
-	if(abilityRAM ~= flags) then
-		if(math.abs(flags - abilityRAM) ~= 8388608) then ability[0] = flags end
+	if (abilityRAM ~= flags) then
+		if (math.abs(flags - abilityRAM) ~= 8388608) then ability[0] = flags end
 		abilityRAM = flags
 	end
 
@@ -264,14 +293,35 @@ function getEvents()
     -- print("[getEvents]")
     -- print("")
 
+	-- TODO: create specific functions to extract RAM
+	-- TODO: print RAM diff
+
 	local events = {}
 	local check = do_tables_match(mapRAM, memory.readbyterange(0x2037C00, 0x400))
 	local check2 = do_tables_match(currMapRAM, memory.readbyterange(0x2034000, 0x800))
 
-	if(check ~= true or check2 ~= true) then
+	if (check ~= true or check2 ~= true) then
 		events[0] = difference(mapRAM, memory.readbyterange(0x2037C00, 0x400))
 		events[1] = difference(currMapRAM, memory.readbyterange(0x2034000, 0x800))
 		events[2] = readRAM("System Bus", 0x300002C, 1)
+
+		print("[preparing map message]")
+		print("current area : " .. areas[events[2]])
+
+		for k, v in pairs(events[1]) do
+			print("map data (" .. byte_to_hex(k, 3) .. ")")
+			print("before : " .. byte_to_string(currMapRAM[k]))
+			print("after  : " .. byte_to_string(v))
+			print("")
+		end
+
+		for k, v in pairs(events[0]) do
+			print("map explored (" .. byte_to_hex(k, 3) .. ")")
+			print("before : " .. byte_to_string(mapRAM[k]))
+			print("after  : " .. byte_to_string(v))
+			print("")
+		end
+
 		mapRAM = memory.readbyterange(0x2037C00, 0x400)
 		currMapRAM = memory.readbyterange(0x2034000, 0x800)
 	end
@@ -356,7 +406,7 @@ function eventTankCollected()
 	local tanks = {}
 	local check = do_tables_match(tankRAM, memory.readbyterange(0x2037200, 0xA00))
 
-	if(check ~= true) then
+	if (check ~= true) then
 		tanks[0] = difference(tankRAM, memory.readbyterange(0x2037200, 0xA00))
 		tankRAM = memory.readbyterange(0x2037200, 0xA00)
 		return tanks
@@ -375,7 +425,7 @@ function eventAbilityCollected(prevRam, newRam)
 	-- Find changed ability
 	-- Only one ability can be collected at a time
 	-- Only checks for added abilities, not removed (varia)
-	if(newRam.ability[0] ~= nil and prevRam.ability[0] ~= newRam.ability[0]) then
+	if (newRam.ability[0] ~= nil and prevRam.ability[0] ~= newRam.ability[0]) then
 		prevRam.ability = newRam.ability
 		return {[0] = newRam.ability[0]}
 	end
@@ -392,6 +442,7 @@ function eventTriggerEvent(prevRam, newRam)
     -- print("")
 
 	local events = {}
+
 	-- check if any changes
 	local is_changes = false
 	for i = 0, 12 do
@@ -519,66 +570,66 @@ function setEvent(prevEvent, newEvent)
     -- print("")
 
 	-- for each even change...
-	if(newEvent[0] ~= nil) then
+	if (newEvent[0] ~= nil) then
 		for k,v in pairs(newEvent[0]) do
 			writeRAM("System Bus", 0x2037C00 + k, 1, v)
 		end
 		mapRAM = memory.readbyterange(0x2037C00, 0x400)
 	end
 
-	if(newEvent[1] ~= nil and newEvent[2] ~= nil and readRAM("System Bus", 0x300002C, 1) == newEvent[2]) then
+	if (newEvent[1] ~= nil and newEvent[2] ~= nil and readRAM("System Bus", 0x300002C, 1) == newEvent[2]) then
 		for k,v in pairs(newEvent[1]) do
 			writeRAM("System Bus", 0x2034000 + k, 1, v)
 		end
 		currMapRAM = memory.readbyterange(0x2034000, 0x800)
 	end
 
-	if(newEvent[3] ~= nil) then
+	if (newEvent[3] ~= nil) then
 		writeRAM("System Bus", 0x30006BA, 2, newEvent[3])
 		bossRAM = readRAM("System Bus", 0x30006BA, 2)
 	end
 
-	if(newEvent[4] ~= nil) then
+	if (newEvent[4] ~= nil) then
 		writeRAM("System Bus", 0x300134B, 1, newEvent[4])
 		dataRoomRAM = readRAM("System Bus", 0x300134B, 1)
 	end
 
-	if(newEvent[5] ~= nil) then
+	if (newEvent[5] ~= nil) then
 		writeRAM("System Bus", 0x30006AE, 2, newEvent[5])
 		destroyedStabilizers = readRAM("System Bus", 0x30006AE, 2)
 	end
 
-	if(newEvent[6] ~= nil) then
+	if (newEvent[6] ~= nil) then
 		writeRAM("System Bus", 0x30006B0, 2, newEvent[6])
 		destroyedXBarriers = readRAM("System Bus", 0x30006B0, 2)
 	end
 
-	if(newEvent[7] ~= nil) then
+	if (newEvent[7] ~= nil) then
 		writeRAM("System Bus", 0x30006B2, 2, newEvent[7])
 		destroyedXSuperBarriers = readRAM("System Bus", 0x30006B2, 2)
 	end
 
-	if(newEvent[8] ~= nil) then
+	if (newEvent[8] ~= nil) then
 		writeRAM("System Bus", 0x30006B4, 2, newEvent[8])
 		destroyedXPowerBarriers = readRAM("System Bus", 0x30006B4, 2)
 	end
 
-	if(newEvent[9] ~= nil) then
+	if (newEvent[9] ~= nil) then
 		writeRAM("System Bus", 0x30006B6, 2, newEvent[9])
 		destroyedEyedoors = readRAM("System Bus", 0x30006B6, 2)
 	end
 
-	if(newEvent[10] ~= nil) then
+	if (newEvent[10] ~= nil) then
 		writeRAM("System Bus", 0x30006B8, 1, newEvent[10])
 		destroyedHatch = readRAM("System Bus", 0x30006B8, 1)
 	end
 
-	if(newEvent[11] ~= nil) then
+	if (newEvent[11] ~= nil) then
 		writeRAM("System Bus", 0x30006B9, 1, newEvent[11])
 		waterFlag = readRAM("System Bus", 0x30006B9, 1)
 	end
 
-	if(newEvent[12] ~= nil) then
+	if (newEvent[12] ~= nil) then
 		writeRAM("System Bus", 0x3000B87, 1, newEvent[12])
 	end
 
