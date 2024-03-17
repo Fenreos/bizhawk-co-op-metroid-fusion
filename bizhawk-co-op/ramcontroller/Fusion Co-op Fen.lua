@@ -105,20 +105,10 @@ itemLocations = {
 	{ ID=99, Area=6, Room=0x57, RoomWidth=0x31, X=0x12, Y=0x12, Width=1, Height=1 },
 }
 
-local areas = {
-	[0] = "Main Deck",
-	[1] = "Sector 1 (SRX)",
-	[2] = "Sector 2 (TRO)",
-	[3] = "Sector 3 (PYR)",
-	[4] = "Sector 4 (AQA)",
-	[5] = "Sector 5 (ARC)",
-	[6] = "Sector 6 (NOC)",
-}
-
 
 
 -- ##########################################################
--- #                    HELPER FUNCTIONS                    #
+-- #                  FEN HELPER FUNCTIONS                  #
 -- ##########################################################
 
 -- create an indent
@@ -175,13 +165,43 @@ function byte_to_string(v)
 end  
 
 -- convert byte to hex
-function byte_to_hex(v, n)
+function int_to_hex(v, n)
     local s = string.upper(string.format("%x", v))
     if (n ~= nil) then
         while string.len(s) < n do s = "0" .. s end
     end
     return "0x" .. s
 end
+
+-- convert byte to hex
+function int_to_string(v, n)
+    local s = tostring(v)
+    if (n ~= nil) then
+        while string.len(s) < n do s = "0" .. s end
+    end
+    return s
+end
+
+
+
+-- ##########################################################
+-- #                     FEN VARIABLES                      #
+-- ##########################################################
+
+local area_table = {
+	[0] = "Main Deck",
+	[1] = "Sector 1 (SRX)",
+	[2] = "Sector 2 (TRO)",
+	[3] = "Sector 3 (PYR)",
+	[4] = "Sector 4 (AQA)",
+	[5] = "Sector 5 (ARC)",
+	[6] = "Sector 6 (NOC)",
+}
+
+-- TODO : check les changement de map maybe
+local past_area = nil
+
+
 
 -- ##########################################################
 -- #                          CORE                          #
@@ -294,7 +314,6 @@ function getEvents()
     -- print("")
 
 	-- TODO: create specific functions to extract RAM
-	-- TODO: print RAM diff
 
 	local events = {}
 	local check = do_tables_match(mapRAM, memory.readbyterange(0x2037C00, 0x400))
@@ -306,21 +325,23 @@ function getEvents()
 		events[2] = readRAM("System Bus", 0x300002C, 1)
 
 		print("[preparing map message]")
-		print("current area : " .. areas[events[2]])
+		print("current area : " .. area_table[events[2]])
 
 		for k, v in pairs(events[1]) do
-			print("map data (" .. byte_to_hex(k, 3) .. ")")
-			print("before : " .. byte_to_string(currMapRAM[k]))
-			print("after  : " .. byte_to_string(v))
 			print("")
+			print("map data part #" .. int_to_string(k, 4) .. " (" .. int_to_hex(k, 3) .. ")")
+			print("before : " .. byte_to_string(currMapRAM[k]))
+			print("after  : " .. byte_to_string(v))	
 		end
 
 		for k, v in pairs(events[0]) do
-			print("map explored (" .. byte_to_hex(k, 3) .. ")")
+			print("")
+			print("map explored part #" .. int_to_string(k, 4) .. " (" .. int_to_hex(k, 3) .. ")")
 			print("before : " .. byte_to_string(mapRAM[k]))
 			print("after  : " .. byte_to_string(v))
-			print("")
 		end
+
+		print("")
 
 		mapRAM = memory.readbyterange(0x2037C00, 0x400)
 		currMapRAM = memory.readbyterange(0x2034000, 0x800)
