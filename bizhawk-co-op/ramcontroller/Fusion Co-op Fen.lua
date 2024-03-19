@@ -1,4 +1,32 @@
 -- ##########################################################
+-- #          POTENTIALLY INTERESTING RAM ADDRESS           #
+-- ##########################################################
+
+-- 0x3000BDE : Game mode 
+-- 0x300001F : Demo is playing flag
+-- 0x3001245 : Current pose 
+--    Can be used to prevent sending garbage data
+
+-- 0x300003B : Main Deck Percentage
+-- 0x300003C : Current SRX Percentage
+-- 0x300003D : Current TRO Percentage
+-- 0x300003E : Current PYR Percentage
+-- 0x300003F : Current AQA Percentage
+-- 0x3000040 : Current ARC Percentage
+-- 0x3000041 : Current NOC Percentage 
+--    Maybe needed to sync progression
+
+-- 0x3000031 : Map X coordinate
+-- 0x3000032 : Map Y coordinate
+-- 0x30000B2 : Room's map X coordinate
+-- 0x30000B3 : Room's map Y coordinate 
+--    Can be used to debug map data
+
+-- 0x300131D : Security status
+-- 0x300131E : Downloaded map status
+--    Maybe needed to sync map correctly
+
+-- ##########################################################
 -- #                          DATA                          #
 -- ##########################################################
 
@@ -153,18 +181,66 @@ function dump(o, n)
 end
 
 -- convert byte to string
-function byte_to_string(v)
+function byte_to_string(v, b, t, f)
+    if (t == nil) then t = "1"
+    else t = tostring(t)
+    end
+  
+    if (f == nil) then t = "0"
+    else f = tostring(f)
+    end
+    
     local s = ""
     for i = 0, 7 do
         r = math.fmod(v, 2)
-        s = (r == 1 and "1" or "0") .. s
+		    c = (r == 1 and t or f)
+
+        if (b == true) then s = s .. c
+		    else s = c .. s
+		    end
+
         v = (v - r) / 2
         i = i + 1
     end
     return s
-end  
+end 
 
--- convert byte to hex
+-- print explored map
+function print_explored_map()
+	print("")
+	print("")
+	print("")
+	-- print("======================================================================")
+	-- print("Map X coordinate        : " .. tostring(readRAM("System Bus", 0x3000031, 1)))
+	-- print("Map Y coordinate        : " .. tostring(readRAM("System Bus", 0x3000032, 1)))
+	-- print("Room's map X coordinate : " .. tostring(readRAM("System Bus", 0x30000B2, 1)))
+	-- print("Room's map Y coordinate : " .. tostring(readRAM("System Bus", 0x30000B3, 1)))
+	print("=====================================================================================================")
+	print("    | 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31")
+	print("----+------------------------------------------------------------------------------------------------")
+
+	local i = 1
+	local j = 0
+	local s = "                "
+	for k, v in pairs(memory.readbyterange(0x2037C00, 0x400)) do
+		s = s .. byte_to_string(v, true, " []", "   ")
+		i = i + 1
+		
+		if (i == 4) then
+			print(int_to_string(j, 3) .. " |" .. s)
+			s = ""
+			i = 0
+			j = j + 1
+		end
+	end
+
+	print("=====================================================================================================")
+	print("")
+	print("")
+	print("")
+end
+
+-- convert int to hex
 function int_to_hex(v, n)
     local s = string.upper(string.format("%x", v))
     if (n ~= nil) then
@@ -173,7 +249,7 @@ function int_to_hex(v, n)
     return "0x" .. s
 end
 
--- convert byte to hex
+-- convert int to to string with leading zeros
 function int_to_string(v, n)
     local s = tostring(v)
     if (n ~= nil) then
@@ -324,27 +400,29 @@ function getEvents()
 		events[1] = difference(currMapRAM, memory.readbyterange(0x2034000, 0x800))
 		events[2] = readRAM("System Bus", 0x300002C, 1)
 
-		print("[preparing map message]")
-		print("current area : " .. area_table[events[2]])
+		-- print("[preparing map message]")
+		-- print("current area : " .. area_table[events[2]])
 
-		for k, v in pairs(events[1]) do
-			print("")
-			print("map data part #" .. int_to_string(k, 4) .. " (" .. int_to_hex(k, 3) .. ")")
-			print("before : " .. byte_to_string(currMapRAM[k]))
-			print("after  : " .. byte_to_string(v))	
-		end
+		-- for k, v in pairs(events[1]) do
+		-- 	print("")
+		-- 	print("map data part #" .. int_to_string(k, 4) .. " (" .. int_to_hex(k, 3) .. ")")
+		-- 	print("before : " .. byte_to_string(currMapRAM[k]))
+		-- 	print("after  : " .. byte_to_string(v))	
+		-- end
 
-		for k, v in pairs(events[0]) do
-			print("")
-			print("map explored part #" .. int_to_string(k, 4) .. " (" .. int_to_hex(k, 3) .. ")")
-			print("before : " .. byte_to_string(mapRAM[k]))
-			print("after  : " .. byte_to_string(v))
-		end
+		-- for k, v in pairs(events[0]) do
+		-- 	print("")
+		-- 	print("map explored part #" .. int_to_string(k, 4) .. " (" .. int_to_hex(k, 3) .. ")")
+		-- 	print("before : " .. byte_to_string(mapRAM[k]))
+		-- 	print("after  : " .. byte_to_string(v))
+		-- end
 
-		print("")
+		-- print("")
 
 		mapRAM = memory.readbyterange(0x2037C00, 0x400)
 		currMapRAM = memory.readbyterange(0x2034000, 0x800)
+
+		print_explored_map()
 	end
 
 	if (bossRAM ~= readRAM("System Bus", 0x30006BA, 2)) then
@@ -804,9 +882,9 @@ function mzm_ram.getMessage()
 
 	if changed then
 		-- Send message
-		print("[data sent]")
-		print(dump(message))
-		print("")
+		-- print("[data sent]")
+		-- print(dump(message))
+		-- print("")
 
 		return message
 	else 
@@ -817,9 +895,9 @@ end
 
 -- Process a message from another player and update RAM
 function mzm_ram.processMessage(their_user, message)
-    print("[data received from " .. dump(their_user) .. "]")
-    print(dump(message))
-    print("")
+    -- print("[data received from " .. dump(their_user) .. "]")
+    -- print(dump(message))
+    -- print("")
 
 	-- Process new tank collected
 	-- Does nothing if tank was already collected
