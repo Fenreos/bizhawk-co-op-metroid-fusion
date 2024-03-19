@@ -268,7 +268,7 @@ function print_map_data_hex()
 	            [1] = int_to_hex(d[2 * (32 * i + j) + 1], 2, false),
 	        }
 	    end
-	      
+
 	    for k = 0, 1 do
 	        r = r .. (k == 0 and int_to_string(i, 2) or "  ") .. " |  "
 	        for j = 0, 31 do
@@ -296,9 +296,9 @@ function print_map_data_bin()
     local t = {}
 	for i = 0, 31 do
 	    for j = 0, 31 do
-	        local s1 = byte_to_string(d[2 * (32 * i + j)], false, "%", ".")
-	        local s2 = byte_to_string(d[2 * (32 * i + j) + 1], false, "%", ".")
-	      
+	        local s1 = byte_to_string(d[2 * (32 * i + j)], true, "%", ".")
+	        local s2 = byte_to_string(d[2 * (32 * i + j) + 1], true, "%", ".")
+
 	        t[j] = {
 	            [0] = string.sub(s1, 1, 4),
 	            [1] = string.sub(s1, 5, 8),
@@ -306,7 +306,7 @@ function print_map_data_bin()
 	            [3] = string.sub(s2, 5, 8),
 	        }
 	    end
-	      
+
 	    for k = 0, 3 do
 	        r = r .. (k == 1 and int_to_string(i, 2) or "  ") .. " |  "
 	        for j = 0, 31 do
@@ -314,7 +314,7 @@ function print_map_data_bin()
 	        end
 	        r = r .. "\n"
 	    end
-	      
+
 	    r = r .. "   |\n"
 	end
 
