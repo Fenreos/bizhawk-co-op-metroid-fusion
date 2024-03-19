@@ -27,7 +27,7 @@
 --    Maybe needed to sync map correctly
 
 -- ##########################################################
--- #                          DATA                          #
+-- #                       ITEM DATA                        #
 -- ##########################################################
 
 itemLocations = {
@@ -205,57 +205,121 @@ function byte_to_string(v, b, t, f)
     return s
 end 
 
--- print explored map
-function print_explored_map()
-	print("")
-	print("")
-	print("")
-	-- print("======================================================================")
-	-- print("Map X coordinate        : " .. tostring(readRAM("System Bus", 0x3000031, 1)))
-	-- print("Map Y coordinate        : " .. tostring(readRAM("System Bus", 0x3000032, 1)))
-	-- print("Room's map X coordinate : " .. tostring(readRAM("System Bus", 0x30000B2, 1)))
-	-- print("Room's map Y coordinate : " .. tostring(readRAM("System Bus", 0x30000B3, 1)))
-	print("=====================================================================================================")
-	print("    | 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31")
-	print("----+------------------------------------------------------------------------------------------------")
-
-	local i = 1
-	local j = 0
-	local s = "                "
-	for k, v in pairs(memory.readbyterange(0x2037C00, 0x400)) do
-		s = s .. byte_to_string(v, true, " []", "   ")
-		i = i + 1
-		
-		if (i == 4) then
-			print(int_to_string(j, 3) .. " |" .. s)
-			s = ""
-			i = 0
-			j = j + 1
-		end
-	end
-
-	print("=====================================================================================================")
-	print("")
-	print("")
-	print("")
-end
-
 -- convert int to hex
-function int_to_hex(v, n)
+function int_to_hex(v, n, p)
     local s = string.upper(string.format("%x", v))
     if (n ~= nil) then
         while string.len(s) < n do s = "0" .. s end
     end
-    return "0x" .. s
+    return (p == false and s or "0x" .. s)
 end
 
--- convert int to to string with leading zeros
+-- convert int to string with leading zeros
 function int_to_string(v, n)
     local s = tostring(v)
     if (n ~= nil) then
         while string.len(s) < n do s = "0" .. s end
     end
     return s
+end
+
+-- print explored map
+function print_explored_map()
+	local r = "\n\n\n"
+	r = r .. "======================================================================================================\n"
+	r = r .. "    | 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 \n"
+	r = r .. "----+-------------------------------------------------------------------------------------------------\n"
+
+	local i = 0
+	local j = 0
+	local s = ""
+	local d = memory.readbyterange(0x2037C00, 0x400)
+	
+	for k = 0, 1023 do
+		s = s .. byte_to_string(d[k], true, "%% ", ".. ")
+		i = i + 1
+		
+		if (i == 4) then
+			r = r .. int_to_string(j, 3) .. " | " .. s .. "\n"
+			s = ""
+			i = 0
+			j = j + 1
+		end
+	end
+
+	r = r .. "======================================================================================================\n"
+	print(r .. "\n\n\n")
+end
+
+-- print map data in binary form
+function print_map_data_hex()
+    local r = "\n\n\n"
+	r = r .. "======================================================================================================================================\n"
+	r = r .. "   |  00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  \n"
+	r = r .. "---+----------------------------------------------------------------------------------------------------------------------------------\n"
+    r = r .. "   |\n"
+    
+    local d = memory.readbyterange(0x2034000, 0x800)
+    local t = {}
+	for i = 0, 31 do
+	    for j = 0, 31 do
+	        t[j] = {
+	            [0] = int_to_hex(d[2 * (32 * i + j)], 2, false),
+	            [1] = int_to_hex(d[2 * (32 * i + j) + 1], 2, false),
+	        }
+	    end
+	      
+	    for k = 0, 1 do
+	        r = r .. (k == 0 and int_to_string(i, 2) or "  ") .. " |  "
+	        for j = 0, 31 do
+	            r = r .. t[j][k] .. "  "
+	        end
+	        r = r .. "\n"
+	    end
+	      
+	    r = r .. "   |\n"
+	end
+
+	r = r .. "======================================================================================================================================\n"
+	print(r .. "\n\n\n")
+end
+
+-- print map data in hex form
+function print_map_data_bin()
+    local r = "\n\n\n"
+	r = r .. "======================================================================================================================================================================================================\n"
+	r = r .. "   |   00    01    02    03    04    05    06    07    08    09    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31   \n"
+	r = r .. "---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n"
+    r = r .. "   |\n"
+    
+    local d = memory.readbyterange(0x2034000, 0x800)
+    local t = {}
+	for i = 0, 31 do
+	    for j = 0, 31 do
+	        local s1 = byte_to_string(d[2 * (32 * i + j)], false, "%", ".")
+	        local s2 = byte_to_string(d[2 * (32 * i + j) + 1], false, "%", ".")
+	      
+	        t[j] = {
+	            [0] = string.sub(s1, 1, 4),
+	            [1] = string.sub(s1, 5, 8),
+	            [2] = string.sub(s2, 1, 4),
+	            [3] = string.sub(s2, 5, 8),
+	        }
+	    end
+	      
+	    for k = 0, 3 do
+	        r = r .. (k == 1 and int_to_string(i, 2) or "  ") .. " |  "
+	        for j = 0, 31 do
+	            r = r .. t[j][k] .. "  "
+	        end
+	        r = r .. "\n"
+	    end
+	      
+	    r = r .. "   |\n"
+	end
+
+	r = r .. "======================================================================================================================================================================================================\n"
+	print(r .. "\n\n\n")
 end
 
 
@@ -423,6 +487,8 @@ function getEvents()
 		currMapRAM = memory.readbyterange(0x2034000, 0x800)
 
 		print_explored_map()
+		print_map_data_bin()
+		print_map_data_hex()
 	end
 
 	if (bossRAM ~= readRAM("System Bus", 0x30006BA, 2)) then
