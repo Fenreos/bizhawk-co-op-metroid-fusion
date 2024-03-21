@@ -185,7 +185,7 @@ function byte_to_string(v, b, t, f)
     if (t == nil) then t = "1"
     else t = tostring(t)
     end
-  
+
     if (f == nil) then t = "0"
     else f = tostring(f)
     end
@@ -460,9 +460,46 @@ function getEvents()
 	local check2 = do_tables_match(currMapRAM, memory.readbyterange(0x2034000, 0x800))
 
 	if (check ~= true or check2 ~= true) then
-		events[0] = difference(mapRAM, memory.readbyterange(0x2037C00, 0x400))
-		events[1] = difference(currMapRAM, memory.readbyterange(0x2034000, 0x800))
+		-- events[0] = difference(mapRAM, memory.readbyterange(0x2037C00, 0x400))
+		-- events[1] = difference(currMapRAM, memory.readbyterange(0x2034000, 0x800))
+
+		events[0] = {}
+		for k, v in pairs(difference(mapRAM, memory.readbyterange(0x2037C00, 0x400)))
+			local merge = v | mapRAM[k]
+			if merge ~= mapRAM[k] then event[0][k] = merge end
+		end
+
+		events[1] = {}
+		local d = memory.readbyterange(0x2034000, 0x800)
+		for k, _ in pairs(difference(currMapRAM, d))
+			local i = (math.mod(k, 2) == 0 and k or k - 1)
+			local n = d[i] + 256 * d[i + 1]
+			local tile = math.mod(n, 1024)
+
+			n = (n - tile) / 1024
+			m = math.mod(n, 2)
+			local flip_h = m ~= 0
+
+			n = (n - m) / 2
+			m = math.mod(n, 2)
+			local flip_v = m ~= 0
+			local palette = (n - m) / 2
+
+			print()
+		end
+
 		events[2] = readRAM("System Bus", 0x300002C, 1)
+
+
+
+
+
+		-- events[1] = {}
+		-- for i = 0, 1023 do
+		-- 	local r = math.fmod(i, 256)
+		-- 	events[1][2 * i] = r
+		-- 	events[1][2 * i + 1] = (i - r) / 256 + 16
+		-- end
 
 		-- print("[preparing map message]")
 		-- print("current area : " .. area_table[events[2]])
