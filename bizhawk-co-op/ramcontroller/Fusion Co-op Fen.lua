@@ -43,8 +43,27 @@
 -- ##########################################################
 
 local ram_table = {
+	game_mode       = { address = 0x3000BDE, range = 0x001, size = 1, cache = {} },
 	explored_map    = { address = 0x2037C00, range = 0x400, size = 1, cache = {} },
 	map_vram_buffer = { address = 0x2034000, range = 0x800, size = 2, cache = {} },
+}
+
+local game_mode_table = {
+    [00] = "Title",
+    [01] = "In-game",
+    [02] = "Reboot",
+    [03] = "Map",
+    [04] = "Most cut-scenes",
+    [05] = "SA-X close-up",
+    [06] = "Erase SRAM menu",
+    [07] = "Intro",
+    [08] = "Game over",
+    [09] = "Ending",
+    [10] = "Died from SR388 collision",
+    [11] = "Credits",
+    [12] = "Demo",
+    [13] = "--Unknown--",
+    [14] = "Nothing",
 }
 
 local area_table = {
@@ -207,15 +226,26 @@ local old = {}
 -- returns the message as a dictionary object
 -- returns false if no message is to be send
 function mf_ram.getMessage()
-	local new = read_ram(ram_table.map_vram_buffer)
+	-- local new = read_ram(ram_table.map_vram_buffer)
+	-- local diff = table_diff(old, new)
+
+	-- tiles = {}
+	-- for k, v in pairs(diff) do
+	-- 	tiles[k] = u16_to_tile(v)
+	-- end
+
+	-- if not is_tables_empty(tiles) then print(dump(tiles)) end
+	-- old = new
+
+	local new = read_ram(ram_table.game_mode)
 	local diff = table_diff(old, new)
 
-	tiles = {}
-	for k, v in pairs(diff) do
-		tiles[k] = u16_to_tile(v)
+	if not is_tables_empty(diff) then
+		local s = game_mode_table[diff[0]]
+		print(s)
+		gui.addmessage(s)
 	end
 
-	if not is_tables_empty(tiles) then print(dump(tiles)) end
 	old = new
 
 	return false
@@ -225,16 +255,7 @@ end
 
 -- process a message from another player
 function mf_ram.processMessage(user, message)
-	-- local new = read_ram(ram_table.map_vram_buffer)
-	-- local diff = table_diff(old, new)
-	-- if not is_tables_empty(diff) then print(dump(diff)) end
 
-	-- print("old : " .. dump(old))
-	-- print("new : " .. dump(new))
-	-- print("diff : " .. dump(diff))
-	-- print("empty : " .. dump(is_tables_empty(diff)))
-
-	-- old = new
 end
 
 
